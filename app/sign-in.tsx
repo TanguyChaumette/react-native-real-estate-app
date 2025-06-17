@@ -2,8 +2,10 @@ import icons from "@/constants/icons";
 import images from "@/constants/images";
 import { login } from "@/lib/appwrite";
 import { useGlobalContext } from "@/lib/global-provider";
-import React from "react";
+import { router } from "expo-router";
+import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   Image,
   ScrollView,
@@ -14,17 +16,42 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const SignIn = () => {
-  const { refetch, loading, isLoggedIn } = useGlobalContext();
+  const { refetch, loading: contextLoading, isLogged } = useGlobalContext();
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+
+  useEffect(() => {
+    if (isLogged) {
+      router.replace("/(root)/(tabs)");
+    }
+  }, [isLogged]);
 
   const handleLogin = async () => {
-    const result = await login();
+    if (isLoggingIn) return;
+    
+    try {
+      setIsLoggingIn(true);
+      const result = await login();
 
-    if (result) {
-      refetch();
-    } else {
-      Alert.alert("Error", "Failed to login");
+      if (result) {
+        await refetch();
+      } else {
+        Alert.alert("Error", "Failed to login");
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      Alert.alert("Error", "An unexpected error occurred");
+    } finally {
+      setIsLoggingIn(false);
     }
   };
+
+  if (contextLoading) {
+    return (
+      <SafeAreaView className="flex-1 bg-white items-center justify-center">
+        <ActivityIndicator size="large" color="#0061FF" />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView className="bg-white h-full">
@@ -47,16 +74,23 @@ const SignIn = () => {
           </Text>
           <TouchableOpacity
             onPress={handleLogin}
-            className="flex flex-row items-center justify-center bg-white shadow-md shadow-zinc-300 rounded-full w-full py-4 mt-5"
+            disabled={isLoggingIn}
+            className={`flex flex-row items-center justify-center bg-white shadow-md shadow-zinc-300 rounded-full w-full py-4 mt-5 ${isLoggingIn ? 'opacity-50' : ''}`}
           >
-            <Image
-              source={icons.google}
-              className="w-5 h-5"
-              resizeMode="contain"
-            />
-            <Text className="text-lg font-rubik-medium text-black-300 ml-2">
-              Continue with Google
-            </Text>
+            {isLoggingIn ? (
+              <ActivityIndicator size="small" color="#0061FF" />
+            ) : (
+              <>
+                <Image
+                  source={icons.google}
+                  className="w-5 h-5"
+                  resizeMode="contain"
+                />
+                <Text className="text-lg font-rubik-medium text-black-300 ml-2">
+                  Continue with Google
+                </Text>
+              </>
+            )}
           </TouchableOpacity>
         </View>
       </ScrollView>

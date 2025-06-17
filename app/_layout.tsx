@@ -1,29 +1,34 @@
-import GlobalProvider from "@/lib/global-provider";
-import { useFonts } from "expo-font";
-import { SplashScreen, Stack } from "expo-router";
+import { GlobalProvider, useGlobalContext } from "@/lib/global-provider";
+import { Slot, useRouter, useSegments } from "expo-router";
 import { useEffect } from "react";
-import "./globals.css";
 
-export default function RootLayout() {
-  const [fontsLoaded] = useFonts({
-    "Rubik-Bold": require("@/assets/fonts/Rubik-Bold.ttf"),
-    "Rubik-ExtraBold": require("@/assets/fonts/Rubik-ExtraBold.ttf"),
-    "Rubik-Medium": require("@/assets/fonts/Rubik-Medium.ttf"),
-    "Rubik-Light": require("@/assets/fonts/Rubik-Light.ttf"),
-    "Rubik-Regular": require("@/assets/fonts/Rubik-Regular.ttf"),
-  });
+function RootLayoutNav() {
+  const { isLogged, loading } = useGlobalContext();
+  const segments = useSegments();
+  const router = useRouter();
 
   useEffect(() => {
-    if (fontsLoaded) {
-      SplashScreen.hideAsync();
+    if (loading) return;
+
+    const inAuthGroup = segments[0] === "sign-in";
+    const inRootGroup = segments[0] === "(root)";
+
+    if (!isLogged && !inAuthGroup) {
+      // Redirect to the sign-in page if not logged in
+      router.replace("/sign-in");
+    } else if (isLogged && inAuthGroup) {
+      // Redirect to the home page if logged in and trying to access auth pages
+      router.replace("/(root)/(tabs)");
     }
-  }, [fontsLoaded]);
+  }, [isLogged, loading, segments]);
 
-  if (!fontsLoaded) return null;
+  return <Slot />;
+}
 
+export default function RootLayout() {
   return (
     <GlobalProvider>
-      <Stack screenOptions={{ headerShown: false }} />
+      <RootLayoutNav />
     </GlobalProvider>
   );
 }

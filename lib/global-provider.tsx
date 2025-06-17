@@ -1,20 +1,13 @@
 import React, { createContext, ReactNode, useContext } from "react";
-
+import { Models } from "react-native-appwrite";
 import { getCurrentUser } from "./appwrite";
 import { useAppwrite } from "./useAppwrite";
 
 interface GlobalContextType {
   isLogged: boolean;
-  user: User | null;
+  user: Models.User<Models.Preferences> | null;
   loading: boolean;
-  refetch: () => void;
-}
-
-interface User {
-  $id: string;
-  name: string;
-  email: string;
-  avatar: string;
+  refetch: () => Promise<void>;
 }
 
 const GlobalContext = createContext<GlobalContextType | undefined>(undefined);
@@ -29,7 +22,7 @@ export const GlobalProvider = ({ children }: GlobalProviderProps) => {
     loading,
     refetch,
   } = useAppwrite({
-    fn: getCurrentUser,
+    fn: async () => await getCurrentUser(),
   });
 
   const isLogged = !!user;
@@ -40,7 +33,9 @@ export const GlobalProvider = ({ children }: GlobalProviderProps) => {
         isLogged,
         user,
         loading,
-        refetch,
+        refetch: async () => {
+          await refetch({});
+        },
       }}
     >
       {children}

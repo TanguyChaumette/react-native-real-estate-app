@@ -22,7 +22,18 @@ export const account = new Account(client);
 
 export async function login() {
   try {
-    const redirectUri = Linking.createURL("/");
+    // First check if there's an existing session
+    try {
+      const currentSession = await account.getSession('current');
+      if (currentSession) {
+        // If there's an active session, delete it first
+        await account.deleteSession('current');
+      }
+    } catch (error) {
+      // No active session, continue with login
+    }
+
+    const redirectUri = Linking.createURL("auth-callback");
 
     const result = await account.createOAuth2Token(
       OAuthProvider.Google,
@@ -47,6 +58,25 @@ export async function login() {
     return !!session;
   } catch (error) {
     console.error(error);
+    return false;
+  }
+}
+
+export async function getCurrentUser() {
+  try {
+    const user = await account.get();
+    return user;
+  } catch (error) {
+    return null;
+  }
+}
+
+export async function logout() {
+  try {
+    await account.deleteSession('current');
+    return true;
+  } catch (error) {
+    console.error('Logout error:', error);
     return false;
   }
 }
